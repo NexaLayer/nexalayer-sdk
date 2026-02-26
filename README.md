@@ -13,6 +13,18 @@ Official Python and Node.js SDKs for [NexaLayer](https://nexalayer.com)—sessio
 
 ## Quick start
 
+Base URL: `https://api.nexalayer.net/v1`
+
+### Register (get API key)
+
+Register once to get `api_key` and `api_secret`. Optional `referral_code` assigns the account to a referral agent.
+
+```bash
+curl -X POST https://api.nexalayer.net/v1/account/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"My Agent","contact_email":"dev@example.com","referral_code":"0345"}'
+```
+
 ### Python
 
 ```bash
@@ -22,9 +34,14 @@ pip install nexalayer
 ```python
 from nexalayer import NexaLayerClient
 
-client = NexaLayerClient(api_key="your-api-key")
+# Register (optional referral_code)
+client = NexaLayerClient(base_url="https://api.nexalayer.net/v1")
+reg = client.register("My Agent", "dev@example.com", referral_code="0345")
+api_key = reg["data"]["api_key"]
+
+# Use API key for sessions
+client = NexaLayerClient(api_key=api_key, base_url="https://api.nexalayer.net/v1")
 session = client.create_session(type="dynamic", config={"product_no": "out_dynamic_1"})
-# Use session for outbound requests through proxy
 response = session.get("https://httpbin.org/ip")
 ```
 
@@ -37,8 +54,21 @@ npm install nexalayer
 ```typescript
 import { NexaLayerClient } from 'nexalayer';
 
-const client = new NexaLayerClient({ apiKey: 'your-api-key' });
-const session = await client.createSession({ type: 'dynamic', config: { product_no: 'out_dynamic_1' } });
+// Register (optional referral_code)
+const baseUrl = 'https://api.nexalayer.net/v1';
+const client = new NexaLayerClient({ baseUrl });
+const reg = await client.register({
+  name: 'My Agent',
+  contact_email: 'dev@example.com',
+  referral_code: '0345',
+});
+const apiKey = reg?.data?.api_key;
+
+const sessionClient = new NexaLayerClient({ apiKey, baseUrl });
+const session = await sessionClient.createSession({
+  type: 'dynamic',
+  config: { product_no: 'out_dynamic_1' },
+});
 const response = await session.get('https://httpbin.org/ip');
 ```
 
