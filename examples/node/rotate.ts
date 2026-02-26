@@ -8,7 +8,7 @@ import { NexaLayerClient } from '../../node/src';
 async function main() {
   const apiKey = process.env.NEXALAYER_API_KEY ?? 'your-api-key';
   const baseUrl =
-    process.env.NEXALAYER_BASE_URL ?? 'https://api.nexalayer.com/v1';
+    process.env.NEXALAYER_BASE_URL ?? 'https://api.nexalayer.net/v1';
 
   const client = new NexaLayerClient({ apiKey, baseUrl });
   const session = await client.createSession({

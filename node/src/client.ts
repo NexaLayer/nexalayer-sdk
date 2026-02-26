@@ -8,7 +8,7 @@ import type {
   CreateSessionOptions,
 } from './types';
 
-const DEFAULT_BASE_URL = 'https://api.nexalayer.com/v1';
+const DEFAULT_BASE_URL = 'https://api.nexalayer.net/v1';
 
 export interface NexaLayerClientOptions {
   apiKey?: string;
@@ -84,10 +84,16 @@ export class NexaLayerClient {
   async register(params: {
     name: string;
     contact_email: string;
+    referral_code?: string;
     [k: string]: unknown;
   }): Promise<unknown> {
     // TODO: implement real POST /account/register
-    return this.request('POST', '/account/register', params);
+    const { referral_code, ...rest } = params;
+    const body: Record<string, unknown> = { ...rest };
+    if (referral_code != null) {
+      body.referral_code = referral_code;
+    }
+    return this.request('POST', '/account/register', body);
   }
 
   async getBalance(): Promise<unknown> {

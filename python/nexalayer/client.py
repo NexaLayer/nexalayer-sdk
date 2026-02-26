@@ -8,7 +8,7 @@ from nexalayer.errors import APIError, AuthError
 from nexalayer.session import Session
 from nexalayer.types import SessionConfig, SessionCreateResponse, TokenResponse
 
-DEFAULT_BASE_URL = "https://api.nexalayer.com/v1"
+DEFAULT_BASE_URL = "https://api.nexalayer.net/v1"
 
 
 class NexaLayerClient:
@@ -75,10 +75,18 @@ class NexaLayerClient:
         token = data.get("data", {}).get("access_token") or "mock-token"
         return TokenResponse(access_token=token)
 
-    def register(self, name: str, contact_email: str, **kwargs: Any) -> dict:
+    def register(
+        self,
+        name: str,
+        contact_email: str,
+        referral_code: Optional[str] = None,
+        **kwargs: Any,
+    ) -> dict:
         """POST /account/register."""
         # TODO: implement real call
-        payload = {"name": name, "contact_email": contact_email, **kwargs}
+        payload: dict = {"name": name, "contact_email": contact_email, **kwargs}
+        if referral_code is not None:
+            payload["referral_code"] = referral_code
         return self._request("POST", "/account/register", json=payload)
 
     def get_balance(self) -> dict:

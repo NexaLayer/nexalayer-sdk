@@ -13,7 +13,7 @@ import { NexaLayerClient } from 'nexalayer';
 
 const client = new NexaLayerClient({
   apiKey: 'your-api-key',
-  baseUrl: 'https://api.nexalayer.com/v1',
+  baseUrl: 'https://api.nexalayer.net/v1',
 });
 const session = await client.createSession({
   type: 'dynamic',

@@ -17,7 +17,7 @@ pip install -e "..[dev]"
 ```python
 from nexalayer import NexaLayerClient
 
-client = NexaLayerClient(api_key="your-api-key", base_url="https://api.nexalayer.com/v1")
+client = NexaLayerClient(api_key="your-api-key", base_url="https://api.nexalayer.net/v1")
 session = client.create_session(type="dynamic", config={"product_no": "out_dynamic_1"})
 resp = session.get("https://httpbin.org/ip")
 ```
