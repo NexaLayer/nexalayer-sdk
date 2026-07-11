@@ -20,6 +20,10 @@ export interface SessionCreateResponse {
 }
 
 export interface CreateSessionOptions {
-  type: 'dynamic' | 'static';
+  type?: 'dynamic' | 'static';
+  session_type?: 'dynamic' | 'static';
+  product_no?: string;
+  idempotencyKey?: string;
   config?: SessionConfigInput;
+  [k: string]: unknown;
 }

@@ -1,4 +1,4 @@
-"""Session abstraction — perform requests through proxy config (placeholder)."""
+"""Session abstraction for NexaLayer managed sessions."""
 
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -23,17 +23,17 @@ class Session:
         self.session_id = session_id
         self.proxy_config = proxy_config or {}
         self._session = requests.Session()
-        # TODO: apply real proxy from proxy_config (e.g. http://user:pass@host:port)
-        # For now we do not set proxies so requests go direct (stub behavior)
+        # Transport helpers are intentionally minimal. Production integrations
+        # should use proxy.full_url or host/port credentials from GET /sessions.
         # self._session.proxies = {"http": ..., "https": ...}
 
     def get(self, url: str, **kwargs: Any) -> requests.Response:
-        """Perform GET through session proxy (placeholder: direct request)."""
+        """Perform GET with the local requests session."""
         # TODO: use proxy_config to route via proxy when available
         return self._session.get(url, timeout=kwargs.get("timeout", 30))
 
     def post(self, url: str, data: Any = None, json: Any = None, **kwargs: Any) -> requests.Response:
-        """Perform POST through session proxy (placeholder: direct request)."""
+        """Perform POST with the local requests session."""
         # TODO: use proxy_config to route via proxy when available
         return self._session.post(url, data=data, json=json, timeout=kwargs.get("timeout", 30))
 

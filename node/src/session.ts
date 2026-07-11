@@ -1,4 +1,4 @@
-/** Session abstraction — perform requests through proxy config (placeholder). */
+/** Session abstraction for NexaLayer managed sessions. */
 
 import type { NexaLayerClient } from './client';
 
@@ -10,7 +10,8 @@ export class Session {
   ) {}
 
   async get(url: string, options?: RequestInit): Promise<Response> {
-    // TODO: use proxyConfig to route via proxy when available
+    // Transport helpers are intentionally minimal. Production integrations
+    // should use proxy.full_url or host/port credentials from GET /sessions.
     return fetch(url, { ...options, method: 'GET' });
   }
 
@@ -38,5 +39,17 @@ export class Session {
 
   async usage(): Promise<unknown> {
     return this.client.getSessionUsage(this.sessionId);
+  }
+
+  async terminate(): Promise<unknown> {
+    return this.client.terminateSession(this.sessionId);
+  }
+
+  async reportEvent(event: Record<string, unknown>): Promise<unknown> {
+    return this.client.reportEvent(this.sessionId, event);
+  }
+
+  async health(): Promise<unknown> {
+    return this.client.getSessionHealth(this.sessionId);
   }
 }

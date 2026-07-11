@@ -1,6 +1,7 @@
 """NexaLayer API client — auth, account, billing, products, sessions, stats."""
 
 from typing import Any, Optional, Union
+from urllib.parse import urlencode
 
 import requests
 
@@ -44,14 +45,18 @@ class NexaLayerClient:
         method: str,
         path: str,
         json: Optional[dict] = None,
+        headers: Optional[dict] = None,
         **kwargs: Any,
     ) -> dict:
         url = f"{self.base_url}{path}"
+        request_headers = self._headers()
+        if headers:
+            request_headers.update(headers)
         resp = self._session.request(
             method,
             url,
             json=json,
-            headers=self._headers(),
+            headers=request_headers,
             timeout=kwargs.get("timeout", 30),
         )
         if resp.status_code >= 400:
@@ -100,10 +105,12 @@ class NexaLayerClient:
         payload = {"amount": amount, "currency": currency, **kwargs}
         return self._request("POST", "/billing/recharge", json=payload)
 
-    def get_products(self) -> dict:
+    def get_products(self, type: str = "all", country_code: Optional[str] = None) -> dict:
         """GET /products."""
-        # TODO: implement real call
-        return self._request("GET", "/products")
+        query = {"type": type}
+        if country_code:
+            query["country_code"] = country_code
+        return self._request("GET", f"/products?{urlencode(query)}")
 
     def recommend_products(self, criteria: dict) -> dict:
         """POST /products/recommend."""
@@ -112,19 +119,33 @@ class NexaLayerClient:
 
     def create_session(
         self,
-        type: str = "dynamic",
+        type: Optional[str] = None,
+        session_type: Optional[str] = None,
+        product_no: Optional[str] = None,
         config: Optional[Union[dict, SessionConfig]] = None,
+        idempotency_key: Optional[str] = None,
         **kwargs: Any,
     ) -> Session:
         """POST /sessions — create a session and return a Session object."""
         cfg = config.to_dict() if isinstance(config, SessionConfig) else (config or {})
-        payload = {"type": type, "config": cfg, **kwargs}
-        data = self._request("POST", "/sessions", json=payload)
-        # Placeholder: real API returns session_id, status, proxy_config
+        resolved_type = session_type or type or cfg.pop("session_type", "dynamic")
+        resolved_product = product_no or cfg.pop("product_no", None)
+        if not resolved_product:
+            raise APIError("product_no is required")
+        payload = {
+            "session_type": resolved_type,
+            "product_no": resolved_product,
+            **cfg,
+            **kwargs,
+        }
+        headers = {"Idempotency-Key": idempotency_key} if idempotency_key else None
+        data = self._request("POST", "/sessions", json=payload, headers=headers)
         inner = data.get("data", data)
-        session_id = inner.get("session_id") or "mock-session-id"
-        status = inner.get("status") or "active"
-        proxy_config = inner.get("proxy_config") or {}
+        session_id = inner.get("session_id")
+        if not session_id:
+            raise APIError(f"Session create response missing session_id: {data}")
+        status = inner.get("status") or "creating"
+        proxy_config = inner.get("proxy") or inner.get("proxy_config") or {}
         resp = SessionCreateResponse(
             session_id=session_id,
             status=status,
@@ -143,8 +164,19 @@ class NexaLayerClient:
 
     def rotate_session(self, session_id: str) -> dict:
         """POST /sessions/{session_id}/rotate."""
-        # TODO: implement real call
         return self._request("POST", f"/sessions/{session_id}/rotate")
+
+    def terminate_session(self, session_id: str) -> dict:
+        """DELETE /sessions/{session_id}."""
+        return self._request("DELETE", f"/sessions/{session_id}")
+
+    def report_event(self, session_id: str, **event: Any) -> dict:
+        """POST /sessions/{session_id}/report-event."""
+        return self._request("POST", f"/sessions/{session_id}/report-event", json=event)
+
+    def get_session_health(self, session_id: str) -> dict:
+        """GET /sessions/{session_id}/health."""
+        return self._request("GET", f"/sessions/{session_id}/health")
 
     def get_session_usage(self, session_id: str) -> dict:
         """GET /sessions/{session_id}/usage."""

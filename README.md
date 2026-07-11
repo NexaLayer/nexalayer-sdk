@@ -1,90 +1,188 @@
 # NexaLayer SDK
 
-**The Network Execution Layer for AI Agents.**
+Managed network sessions for Playwright, Browser Use, AI agents, and automation scripts.
 
-Official Python and Node.js SDKs for [NexaLayer](https://nexalayer.com)—session-based proxy abstraction for dynamic and static proxies, built for agent-first workflows.
+**Keep using proxies. Stop managing them.**  
+中文：代理继续使用，代理管理交给 NexaLayer。
 
-## Features
+This repository contains the Python and Node/TypeScript SDK source. The packages are not yet published to PyPI or npm from this workspace, so install from source until an official release is announced.
 
-- **Session abstraction**: Create, rotate, and manage proxy sessions via a unified API.
-- **Dual auth**: API Key/Secret token exchange or direct Bearer token.
-- **Typed clients**: Lightweight request/response models and structured errors.
-- **Python & Node**: Same concepts across both runtimes.
+## Status
 
-## Quick start
+| Runtime | Source | Package registry status |
+| --- | --- | --- |
+| Python | `python/` | Source install supported; PyPI publication not confirmed |
+| Node / TypeScript | `node/` | Source build supported; npm publication not confirmed |
 
-Base URL: `https://api.nexalayer.net/v1`
+## Installation
 
-### Register (get API key)
-
-Register once to get `api_key` and `api_secret`. Optional `referral_code` assigns the account to a referral agent.
-
-```bash
-curl -X POST https://api.nexalayer.net/v1/account/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"My Agent","contact_email":"dev@example.com","referral_code":"0345"}'
-```
-
-### Python
+Python from repository root:
 
 ```bash
-pip install nexalayer
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e ".[dev]"
 ```
+
+Node from repository root:
+
+```bash
+cd node
+npm install
+npm run build
+```
+
+## Authentication
+
+```bash
+export NEXALAYER_BASE_URL=https://api.nexalayer.net/v1
+export NEXALAYER_API_KEY=agk_your_key
+```
+
+The SDK uses `X-API-Key` for Agent requests.
+
+## 60-second Python example
+
+This example auto-selects a dynamic product, creates a session, reports telemetry, reads health, and terminates the session in cleanup.
 
 ```python
+import os
+import time
+import uuid
+
+import requests
 from nexalayer import NexaLayerClient
 
-# Register (optional referral_code)
-client = NexaLayerClient(base_url="https://api.nexalayer.net/v1")
-reg = client.register("My Agent", "dev@example.com", referral_code="0345")
-api_key = reg["data"]["api_key"]
+api_key = os.environ["NEXALAYER_API_KEY"]
+client = NexaLayerClient(api_key=api_key)
+session_id = None
 
-# Use API key for sessions
-client = NexaLayerClient(api_key=api_key, base_url="https://api.nexalayer.net/v1")
-session = client.create_session(type="dynamic", config={"product_no": "out_dynamic_1"})
-response = session.get("https://httpbin.org/ip")
+def data(resp):
+    return resp.get("data", resp)
+
+try:
+    products = data(client.get_products(type="dynamic"))
+    product = next(p for p in products.get("items", []) if p.get("product_no"))
+
+    session = client.create_session(
+        session_type="dynamic",
+        product_no=product["product_no"],
+        quantity=1,
+        protocol="socks5",
+        rotation_mode="on_demand",
+        idempotency_key=f"py-{uuid.uuid4()}",
+    )
+    session_id = session.session_id
+
+    for _ in range(60):
+        current = data(client.get_session(session_id))
+        if current.get("status") == "active":
+            proxy_url = current["proxy"]["full_url"]
+            break
+        time.sleep(2)
+    else:
+        raise TimeoutError("Session did not become active")
+
+    res = requests.get(
+        "https://httpbin.org/ip",
+        proxies={"http": proxy_url, "https": proxy_url},
+        timeout=30,
+    )
+    client.report_event(
+        session_id,
+        event_type="success" if res.ok else "http_error",
+        status_code=res.status_code,
+        target_host="httpbin.org",
+    )
+    print(client.get_session_health(session_id))
+finally:
+    if session_id:
+        client.terminate_session(session_id)
 ```
 
-### Node
+## Dynamic Session
 
-```bash
-npm install nexalayer
+Use a dynamic session when your automation can rotate after errors such as timeout, 403, 429, or explicit blocks.
+
+```python
+session = client.create_session(
+    session_type="dynamic",
+    product_no="selected_from_products_api",
+    quantity=1,
+    protocol="socks5",
+    rotation_mode="on_demand",
+)
 ```
 
-```typescript
-import { NexaLayerClient } from 'nexalayer';
+## Static Session
 
-// Register (optional referral_code)
-const baseUrl = 'https://api.nexalayer.net/v1';
-const client = new NexaLayerClient({ baseUrl });
-const reg = await client.register({
-  name: 'My Agent',
-  contact_email: 'dev@example.com',
-  referral_code: '0345',
-});
-const apiKey = reg?.data?.api_key;
+Use a static session when you need fixed network identity for a longer-lived task.
 
-const sessionClient = new NexaLayerClient({ apiKey, baseUrl });
-const session = await sessionClient.createSession({
-  type: 'dynamic',
-  config: { product_no: 'out_dynamic_1' },
-});
-const response = await session.get('https://httpbin.org/ip');
+```python
+session = client.create_session(
+    session_type="static",
+    product_no="selected_from_products_api",
+    quantity=1,
+    duration=30,
+    protocol="socks5",
+)
 ```
 
-## Documentation
+## Telemetry
 
-- [Full documentation](https://docs.nexalayer.com)
-- [API reference](https://docs.nexalayer.com/api-reference/openapi)
-- [Quickstart](https://docs.nexalayer.com/quickstart)
+```python
+client.report_event(
+    session_id,
+    event_type="timeout",
+    status_code=0,
+    target_host="example.com",
+)
+```
 
-## Repository layout
+## Health
 
-- `python/` — Python package and tests
-- `node/` — Node/TypeScript package
-- `examples/python/` — Python quickstart and rotate examples
-- `examples/node/` — Node quickstart and rotate examples
+```python
+health = client.get_session_health(session_id)
+```
 
-## License
+`timeout`, `captcha`, `block`, and repeated HTTP errors are not neutral noise; report them so NexaLayer can score the session and recommend rotate or pause.
 
-MIT. See [LICENSE](LICENSE).
+## Cleanup
+
+Always terminate sessions you no longer need:
+
+```python
+try:
+    ...
+finally:
+    if session_id:
+        client.terminate_session(session_id)
+```
+
+## Playwright
+
+Use the public Playwright examples:
+
+- Chinese: https://github.com/NexaLayer/nexalayer-examples/tree/main/playwright/basic-session
+- English: https://github.com/NexaLayer/nexalayer-examples/tree/main/playwright/basic-session
+
+## 中文文档
+
+- 中文快速开始: https://docs.nexalayer.net/zh/quick-start
+- Playwright 中文 Demo: https://docs.nexalayer.net/zh/examples
+- API 文档: https://docs.nexalayer.net/api-reference/openapi
+
+## Error handling
+
+- Check `backend_ready=true` before creating paid sessions after registration.
+- Use `Idempotency-Key` for create, rotate, renew, and recharge operations.
+- Do not log `proxy.full_url` in production without redaction because it can contain proxy credentials.
+- Respect target website terms and applicable law.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Security
+
+Do not open public issues with API keys, cookies, account passwords, proxy credentials, or target-site secrets. See [SECURITY.md](SECURITY.md).

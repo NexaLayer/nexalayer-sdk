@@ -46,12 +46,13 @@ export class NexaLayerClient {
   private async request<T>(
     method: string,
     path: string,
-    body?: object
+    body?: object,
+    extraHeaders: Record<string, string> = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const res = await fetch(url, {
       method,
-      headers: this.headers(),
+      headers: { ...this.headers(), ...extraHeaders },
       body: body ? JSON.stringify(body) : undefined,
     });
     if (res.status >= 400) {
@@ -115,9 +116,11 @@ export class NexaLayerClient {
     });
   }
 
-  async getProducts(): Promise<unknown> {
-    // TODO: GET /products
-    return this.request('GET', '/products');
+  async getProducts(params: { type?: 'all' | 'dynamic' | 'static'; country_code?: string } = {}): Promise<unknown> {
+    const search = new URLSearchParams();
+    search.set('type', params.type ?? 'all');
+    if (params.country_code) search.set('country_code', params.country_code);
+    return this.request('GET', `/products?${search.toString()}`);
   }
 
   async recommendProducts(criteria: object): Promise<unknown> {
@@ -126,21 +129,39 @@ export class NexaLayerClient {
   }
 
   async createSession(options: CreateSessionOptions): Promise<Session> {
-    const { type = 'dynamic', config = {} } = options;
-    // TODO: real POST /sessions
+    const { type, session_type, product_no, idempotencyKey, config = {}, ...rest } = options;
+    const resolvedType = session_type ?? type ?? 'dynamic';
+    const resolvedProduct = product_no ?? config.product_no;
+    if (!resolvedProduct) {
+      throw new APIError('product_no is required');
+    }
     const data = await this.request<{
       data?: {
         session_id?: string;
         status?: string;
+        proxy?: Record<string, unknown>;
         proxy_config?: Record<string, unknown>;
       };
-    }>('POST', '/sessions', { type, config });
+    }>(
+      'POST',
+      '/sessions',
+      {
+        session_type: resolvedType,
+        product_no: resolvedProduct,
+        ...config,
+        ...rest,
+      },
+      idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}
+    );
     const inner = data?.data ?? (data as Record<string, unknown>);
-    const sessionId =
-      (inner.session_id as string) ?? 'mock-session-id';
-    const status = (inner.status as string) ?? 'active';
+    const sessionId = inner.session_id as string;
+    if (!sessionId) {
+      throw new APIError('Session create response missing session_id');
+    }
     const proxyConfig =
-      (inner.proxy_config as Record<string, unknown>) ?? {};
+      (inner.proxy as Record<string, unknown>) ??
+      (inner.proxy_config as Record<string, unknown>) ??
+      {};
     return new Session(this, sessionId, proxyConfig);
   }
 
@@ -152,6 +173,18 @@ export class NexaLayerClient {
   async rotateSession(sessionId: string): Promise<unknown> {
     // TODO: POST /sessions/{session_id}/rotate
     return this.request('POST', `/sessions/${sessionId}/rotate`);
+  }
+
+  async terminateSession(sessionId: string): Promise<unknown> {
+    return this.request('DELETE', `/sessions/${sessionId}`);
+  }
+
+  async reportEvent(sessionId: string, event: Record<string, unknown>): Promise<unknown> {
+    return this.request('POST', `/sessions/${sessionId}/report-event`, event);
+  }
+
+  async getSessionHealth(sessionId: string): Promise<unknown> {
+    return this.request('GET', `/sessions/${sessionId}/health`);
   }
 
   async getSessionUsage(sessionId: string): Promise<unknown> {

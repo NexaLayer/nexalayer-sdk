@@ -29,7 +29,7 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://docs.nexalayer.com"
+Documentation = "https://docs.nexalayer.net"
 Repository = "https://github.com/NexaLayer/nexalayer-sdk"
 
 [tool.setuptools.packages.find]

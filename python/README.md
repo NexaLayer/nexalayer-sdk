@@ -1,38 +1,26 @@
 # NexaLayer Python SDK
 
-Install in development mode from the **repository root**:
+Install from the repository root:
 
 ```bash
+python3 -m venv .venv
+. .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Or from this directory (parent must have pyproject.toml):
-
-```bash
-pip install -e "..[dev]"
-```
+The package is not documented as published to PyPI yet. Use source install until an official release is available.
 
 ## Usage
 
-Default base URL: `https://api.nexalayer.net/v1`.
-
-**Register (optional referral_code)**:
-
 ```python
+import os
 from nexalayer import NexaLayerClient
 
-client = NexaLayerClient(base_url="https://api.nexalayer.net/v1")
-reg = client.register("My Agent", "dev@example.com", referral_code="0345")
-api_key = reg["data"]["api_key"]
+client = NexaLayerClient(api_key=os.environ["NEXALAYER_API_KEY"])
+products = client.get_products(type="dynamic")
 ```
 
-**Create session and use proxy**:
-
-```python
-client = NexaLayerClient(api_key=api_key, base_url="https://api.nexalayer.net/v1")
-session = client.create_session(type="dynamic", config={"product_no": "out_dynamic_1"})
-resp = session.get("https://httpbin.org/ip")
-```
+Create sessions with a `product_no` returned by `/products`; do not hardcode old product IDs.
 
 ## Tests
 

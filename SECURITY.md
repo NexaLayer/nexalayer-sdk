@@ -5,7 +5,7 @@
 If you believe you have found a security vulnerability in the NexaLayer SDK or related services, please report it responsibly:
 
 1. **Do not** open a public GitHub issue.
-2. Email security concerns to: **security@nexalayer.com** (replace with your actual contact).
+2. Use GitHub private security advisories when available, or contact the maintainers through the organization support channel.
 3. Include a clear description, steps to reproduce, and impact if possible.
 4. We will acknowledge receipt and aim to respond within a reasonable time.
 
