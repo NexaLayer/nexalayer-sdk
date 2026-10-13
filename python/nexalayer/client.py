@@ -94,16 +94,66 @@ class NexaLayerClient:
             payload["referral_code"] = referral_code
         return self._request("POST", "/account/register", json=payload)
 
+    def request_api_key(self, email: str, referral_code: Optional[str] = None) -> dict:
+        """POST /account/request-api-key; first-time emails receive trial credit."""
+        payload = {"email": email}
+        if referral_code:
+            payload["referral_code"] = referral_code
+        return self._request("POST", "/account/request-api-key", json=payload)
+
     def get_balance(self) -> dict:
         """GET /billing/balance."""
         # TODO: implement real call
         return self._request("GET", "/billing/balance")
 
-    def recharge(self, amount: float, currency: str = "USD", **kwargs: Any) -> dict:
+    def recharge(
+        self,
+        amount: float,
+        currency: str = "USD",
+        idempotency_key: Optional[str] = None,
+        **kwargs: Any,
+    ) -> dict:
         """POST /billing/recharge."""
         # TODO: implement real call
         payload = {"amount": amount, "currency": currency, **kwargs}
-        return self._request("POST", "/billing/recharge", json=payload)
+        headers = {"Idempotency-Key": idempotency_key} if idempotency_key else None
+        return self._request("POST", "/billing/recharge", json=payload, headers=headers)
+
+    def get_budget(self) -> dict:
+        """GET /account/budget."""
+        return self._request("GET", "/account/budget")
+
+    def set_budget(
+        self,
+        *,
+        idempotency_key: str,
+        key_limit_usd: Optional[float] = None,
+        daily_limit_usd: Optional[float] = None,
+        pause_on_exceed: bool = True,
+        alert_thresholds: Optional[list] = None,
+        paused: Optional[bool] = None,
+    ) -> dict:
+        """PUT /account/budget."""
+        if not idempotency_key:
+            raise ValueError("idempotency_key is required")
+        payload = {
+            "key_limit_usd": key_limit_usd,
+            "daily_limit_usd": daily_limit_usd,
+            "pause_on_exceed": pause_on_exceed,
+            "alert_thresholds": alert_thresholds or [50, 80, 100],
+        }
+        if paused is not None:
+            payload["paused"] = paused
+        return self._request(
+            "PUT",
+            "/account/budget",
+            json=payload,
+            headers={"Idempotency-Key": idempotency_key},
+        )
+
+    def get_usage_alerts(self) -> dict:
+        """GET /account/usage-alerts."""
+        return self._request("GET", "/account/usage-alerts")
 
     def get_products(self, type: str = "all", country_code: Optional[str] = None) -> dict:
         """GET /products."""
@@ -162,9 +212,10 @@ class NexaLayerClient:
         # TODO: implement real call
         return self._request("GET", f"/sessions/{session_id}")
 
-    def rotate_session(self, session_id: str) -> dict:
+    def rotate_session(self, session_id: str, idempotency_key: Optional[str] = None) -> dict:
         """POST /sessions/{session_id}/rotate."""
-        return self._request("POST", f"/sessions/{session_id}/rotate")
+        headers = {"Idempotency-Key": idempotency_key} if idempotency_key else None
+        return self._request("POST", f"/sessions/{session_id}/rotate", headers=headers)
 
     def terminate_session(self, session_id: str) -> dict:
         """DELETE /sessions/{session_id}."""

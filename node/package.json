@@ -1,11 +1,13 @@
 {
-  "name": "nexalayer",
+  "name": "@nexalayer/sdk",
   "version": "0.1.0",
   "description": "NexaLayer SDK — The Network Execution Layer for AI Agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js 2>/dev/null || echo 'Add jest for tests'",
     "lint": "echo 'Add eslint'"
   },

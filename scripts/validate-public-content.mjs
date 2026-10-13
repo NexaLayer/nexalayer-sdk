@@ -13,7 +13,7 @@ const banned = [
   /socks5:\/\/[^@\s]+:[^@\s]+@/,
 ];
 
-const ignoredDirs = new Set([".git", ".pytest_cache", "dist", "node_modules"]);
+const ignoredDirs = new Set([".git", ".pytest_cache", ".venv", "dist", "node_modules"]);
 const ignoredFiles = new Set([path.join("scripts", "validate-public-content.mjs")]);
 const scannedSuffixes = [".md", ".py", ".ts", ".js", ".mjs", ".json", ".yml", ".yaml", ".toml", ".example"];
 

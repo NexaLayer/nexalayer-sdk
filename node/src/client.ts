@@ -97,6 +97,10 @@ export class NexaLayerClient {
     return this.request('POST', '/account/register', body);
   }
 
+  async requestApiKey(params: { email: string; referral_code?: string }): Promise<unknown> {
+    return this.request('POST', '/account/request-api-key', params);
+  }
+
   async getBalance(): Promise<unknown> {
     // TODO: GET /billing/balance
     return this.request('GET', '/billing/balance');
@@ -105,15 +109,40 @@ export class NexaLayerClient {
   async recharge(params: {
     amount: number;
     currency?: string;
+    idempotencyKey?: string;
     [k: string]: unknown;
   }): Promise<unknown> {
     // TODO: POST /billing/recharge
-    const { amount, currency, ...rest } = params;
-    return this.request('POST', '/billing/recharge', {
-      amount,
-      currency: currency ?? 'USD',
-      ...rest,
+    const { amount, currency, idempotencyKey, ...rest } = params;
+    return this.request(
+      'POST',
+      '/billing/recharge',
+      { amount, currency: currency ?? 'USD', ...rest },
+      idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}
+    );
+  }
+
+  async getBudget(): Promise<unknown> {
+    return this.request('GET', '/account/budget');
+  }
+
+  async setBudget(params: {
+    key_limit_usd?: number | null;
+    daily_limit_usd?: number | null;
+    pause_on_exceed?: boolean;
+    alert_thresholds?: number[];
+    paused?: boolean;
+    idempotencyKey: string;
+  }): Promise<unknown> {
+    const { idempotencyKey, ...body } = params;
+    if (!idempotencyKey) throw new APIError('idempotencyKey is required');
+    return this.request('PUT', '/account/budget', body, {
+      'Idempotency-Key': idempotencyKey,
     });
+  }
+
+  async getUsageAlerts(): Promise<unknown> {
+    return this.request('GET', '/account/usage-alerts');
   }
 
   async getProducts(params: { type?: 'all' | 'dynamic' | 'static'; country_code?: string } = {}): Promise<unknown> {
@@ -170,9 +199,10 @@ export class NexaLayerClient {
     return this.request('GET', `/sessions/${sessionId}`);
   }
 
-  async rotateSession(sessionId: string): Promise<unknown> {
+  async rotateSession(sessionId: string, idempotencyKey?: string): Promise<unknown> {
     // TODO: POST /sessions/{session_id}/rotate
-    return this.request('POST', `/sessions/${sessionId}/rotate`);
+    return this.request('POST', `/sessions/${sessionId}/rotate`, undefined,
+      idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {});
   }
 
   async terminateSession(sessionId: string): Promise<unknown> {
