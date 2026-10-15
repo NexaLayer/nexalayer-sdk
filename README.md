@@ -5,31 +5,27 @@ Managed network sessions for Playwright, Browser Use, AI agents, and automation 
 **Keep using proxies. Stop managing them.**  
 中文：代理继续使用，代理管理交给 NexaLayer。
 
-This repository contains the Python and Node/TypeScript SDK source. Release automation publishes signed release artifacts to PyPI and npm after registry ownership and secrets are configured.
+This repository contains the Python and Node/TypeScript SDK source. Signed release artifacts are published to PyPI and npm through GitHub Trusted Publishing and npm provenance.
 
 ## Status
 
 | Runtime | Source | Package registry status |
 | --- | --- | --- |
-| Python | `python/` | Package name `nexalayer`; release workflow configured |
-| Node / TypeScript | `node/` | Package name `@nexalayer/sdk`; release workflow configured |
+| Python | `python/` | [`nexalayer`](https://pypi.org/project/nexalayer/) `0.1.0` |
+| Node / TypeScript | `node/` | [`@nexalayer/sdk`](https://www.npmjs.com/package/@nexalayer/sdk) `0.1.0` |
 
 ## Installation
 
-Python from repository root:
+Python:
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -e ".[dev]"
+pip install nexalayer
 ```
 
-Node from repository root:
+Node / TypeScript:
 
 ```bash
-cd node
-npm install
-npm run build
+npm install @nexalayer/sdk
 ```
 
 ## Authentication

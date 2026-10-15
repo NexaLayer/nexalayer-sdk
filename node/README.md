@@ -1,19 +1,17 @@
 # NexaLayer Node SDK
 
-Build from source:
+Install from npm:
 
 ```bash
-cd node
-npm install
-npm run build
+npm install @nexalayer/sdk
 ```
 
-The package is not documented as published to npm yet. Use the source package until an official release is available.
+The public package is `@nexalayer/sdk`.
 
 ## Usage
 
 ```typescript
-import { NexaLayerClient } from "./src";
+import { NexaLayerClient } from "@nexalayer/sdk";
 
 const client = new NexaLayerClient({
   apiKey: process.env.NEXALAYER_API_KEY,

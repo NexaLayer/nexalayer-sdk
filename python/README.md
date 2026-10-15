@@ -1,14 +1,12 @@
 # NexaLayer Python SDK
 
-Install from the repository root:
+Install from PyPI:
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -e ".[dev]"
+pip install nexalayer
 ```
 
-The package is not documented as published to PyPI yet. Use source install until an official release is available.
+The public package is `nexalayer`.
 
 ## Usage
 
