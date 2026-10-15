@@ -15,7 +15,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NexaLayer/nexalayer-sdk"
+    "url": "git+https://github.com/NexaLayer/nexalayer-sdk.git"
   },
   "engines": {
     "node": ">=18"

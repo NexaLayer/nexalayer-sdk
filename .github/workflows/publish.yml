@@ -11,6 +11,14 @@ on:
         description: Publish the current version to TestPyPI to verify trusted publishing
         type: boolean
         default: false
+      publish_pypi:
+        description: Publish to PyPI when dry_run is false
+        type: boolean
+        default: false
+      publish_npm:
+        description: Publish to npm when dry_run is false
+        type: boolean
+        default: false
   release:
     types: [published]
 
@@ -35,10 +43,10 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
       - name: Publish to PyPI
-        if: github.event_name == 'release' || !inputs.dry_run
+        if: github.event_name == 'release' || (!inputs.dry_run && inputs.publish_pypi)
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Verify PyPI visibility
-        if: github.event_name == 'release' || !inputs.dry_run
+        if: github.event_name == 'release' || (!inputs.dry_run && inputs.publish_pypi)
         run: |
           VERSION=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
           for attempt in 1 2 3 4 5; do
@@ -49,6 +57,9 @@ jobs:
 
   npm:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -69,13 +80,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish npm package
-        if: github.event_name == 'release' || !inputs.dry_run
+        if: github.event_name == 'release' || (!inputs.dry_run && inputs.publish_npm)
         run: npm publish --access public --provenance
         working-directory: node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Verify public scoped npm package
-        if: github.event_name == 'release' || !inputs.dry_run
+        if: github.event_name == 'release' || (!inputs.dry_run && inputs.publish_npm)
         run: |
           VERSION=$(node -p "require('./package.json').version")
           for attempt in 1 2 3 4 5; do
