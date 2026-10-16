@@ -11,8 +11,8 @@ This repository contains the Python and Node/TypeScript SDK source. Signed relea
 
 | Runtime | Source | Package registry status |
 | --- | --- | --- |
-| Python | `python/` | [`nexalayer`](https://pypi.org/project/nexalayer/) `0.1.0` |
-| Node / TypeScript | `node/` | [`@nexalayer/sdk`](https://www.npmjs.com/package/@nexalayer/sdk) `0.1.0` |
+| Python | `python/` | [`nexalayer`](https://pypi.org/project/nexalayer/) `0.1.1` |
+| Node / TypeScript | `node/` | [`@nexalayer/sdk`](https://www.npmjs.com/package/@nexalayer/sdk) `0.1.1` |
 
 ## Installation
 

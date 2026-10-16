@@ -145,10 +145,19 @@ export class NexaLayerClient {
     return this.request('GET', '/account/usage-alerts');
   }
 
-  async getProducts(params: { type?: 'all' | 'dynamic' | 'static'; country_code?: string } = {}): Promise<unknown> {
+  async getProducts(params: {
+    type?: 'all' | 'dynamic' | 'static';
+    country?: string;
+    in_stock?: boolean;
+    limit?: number;
+    cursor?: string;
+  } = {}): Promise<unknown> {
     const search = new URLSearchParams();
     search.set('type', params.type ?? 'all');
-    if (params.country_code) search.set('country_code', params.country_code);
+    search.set('in_stock', String(params.in_stock ?? true));
+    search.set('limit', String(params.limit ?? 20));
+    if (params.country) search.set('country', params.country);
+    if (params.cursor) search.set('cursor', params.cursor);
     return this.request('GET', `/products?${search.toString()}`);
   }
 

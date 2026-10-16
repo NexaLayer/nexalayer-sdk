@@ -23,3 +23,17 @@ def test_get_token_requires_secret():
         client.get_token(api_key="key")
     with pytest.raises(AuthError):
         client.get_token(api_key="key", api_secret=None)
+
+
+def test_get_products_sends_current_filters(monkeypatch):
+    client = NexaLayerClient(api_key="key", base_url="https://api.example.com/v1")
+    captured = {}
+
+    def fake_request(method, path, **kwargs):
+        captured.update(method=method, path=path, kwargs=kwargs)
+        return {"items": []}
+
+    monkeypatch.setattr(client, "_request", fake_request)
+    client.get_products(type="dynamic", country="US", in_stock=False, limit=10, cursor="MTA")
+    assert captured["method"] == "GET"
+    assert captured["path"] == "/products?type=dynamic&in_stock=false&limit=10&country=US&cursor=MTA"

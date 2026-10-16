@@ -155,11 +155,20 @@ class NexaLayerClient:
         """GET /account/usage-alerts."""
         return self._request("GET", "/account/usage-alerts")
 
-    def get_products(self, type: str = "all", country_code: Optional[str] = None) -> dict:
+    def get_products(
+        self,
+        type: str = "all",
+        country: Optional[str] = None,
+        in_stock: bool = True,
+        limit: int = 20,
+        cursor: Optional[str] = None,
+    ) -> dict:
         """GET /products."""
-        query = {"type": type}
-        if country_code:
-            query["country_code"] = country_code
+        query = {"type": type, "in_stock": str(in_stock).lower(), "limit": limit}
+        if country:
+            query["country"] = country
+        if cursor:
+            query["cursor"] = cursor
         return self._request("GET", f"/products?{urlencode(query)}")
 
     def recommend_products(self, criteria: dict) -> dict:
