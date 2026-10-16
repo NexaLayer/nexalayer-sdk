@@ -11,8 +11,10 @@ This repository contains the Python and Node/TypeScript SDK source. Signed relea
 
 | Runtime | Source | Package registry status |
 | --- | --- | --- |
-| Python | `python/` | [`nexalayer`](https://pypi.org/project/nexalayer/) `0.1.1` |
+| Python | `python/` | [`nexalayer`](https://pypi.org/project/nexalayer/) `0.1.5` |
 | Node / TypeScript | `node/` | [`@nexalayer/sdk`](https://www.npmjs.com/package/@nexalayer/sdk) `0.1.1` |
+
+The separately published MCP server, [`@nexalayer/mcp`](https://www.npmjs.com/package/@nexalayer/mcp), is `0.1.5`.
 
 ## Installation
 
@@ -36,6 +38,15 @@ export NEXALAYER_API_KEY=agk_your_key
 ```
 
 The SDK uses `X-API-Key` for Agent requests.
+
+## Pricing
+
+- Dynamic proxy sessions start at **$0.23/GB**.
+- Shared static proxy sessions start at **$1.05/month**.
+
+Use `GET /v1/public/products` for unauthenticated discovery or
+`client.get_products()` for the current authenticated catalog and authoritative
+quote before creating a paid session. Prices and availability can change.
 
 ## 60-second Python example
 
@@ -71,7 +82,7 @@ try:
     session_id = session.session_id
 
     for _ in range(60):
-        current = data(client.get_session(session_id))
+        current = data(client.get_session(session_id, include_credentials=True))
         if current.get("status") == "active":
             proxy_url = current["proxy"]["full_url"]
             break
@@ -143,6 +154,24 @@ health = client.get_session_health(session_id)
 
 `timeout`, `captcha`, `block`, and repeated HTTP errors are not neutral noise; report them so NexaLayer can score the session and recommend rotate or pause.
 
+## Credentials and usage
+
+`get_session()` and `rotate_session()` hide `proxy.full_url` and other proxy
+credentials by default. Request credentials only at the point where the client
+needs to connect:
+
+```python
+session_data = client.get_session(session_id, include_credentials=True)
+```
+
+Read measured traffic and request usage for a session with:
+
+```python
+usage = client.get_session_usage(session_id)
+# Equivalent session helper:
+usage = session.usage()
+```
+
 ## Cleanup
 
 Always terminate sessions you no longer need:
@@ -172,7 +201,9 @@ Use the public Playwright examples:
 
 - Check `backend_ready=true` before creating paid sessions after registration.
 - Use `Idempotency-Key` for create, rotate, renew, and recharge operations.
-- Do not log `proxy.full_url` in production without redaction because it can contain proxy credentials.
+- `PRODUCT_NOT_FOUND` is returned with HTTP 404 when `product_no` is unknown or unavailable.
+- `PRICE_MISMATCH` is returned with HTTP 409 when the upstream charge does not match the displayed quote; the order is rejected before charging.
+- `proxy.full_url` is hidden by default. When explicitly requested with `include_credentials=True`, treat it as a secret and never log it without redaction.
 - Respect target website terms and applicable law.
 
 ## Contributing

@@ -216,15 +216,25 @@ class NexaLayerClient:
             proxy_config=resp.proxy_config,
         )
 
-    def get_session(self, session_id: str) -> dict:
-        """GET /sessions/{session_id}."""
-        # TODO: implement real call
-        return self._request("GET", f"/sessions/{session_id}")
+    def get_session(self, session_id: str, include_credentials: bool = False) -> dict:
+        """GET /sessions/{session_id}; credentials are hidden by default."""
+        path = f"/sessions/{session_id}"
+        if include_credentials:
+            path = f"{path}?include_credentials=true"
+        return self._request("GET", path)
 
-    def rotate_session(self, session_id: str, idempotency_key: Optional[str] = None) -> dict:
-        """POST /sessions/{session_id}/rotate."""
+    def rotate_session(
+        self,
+        session_id: str,
+        idempotency_key: Optional[str] = None,
+        include_credentials: bool = False,
+    ) -> dict:
+        """POST /sessions/{session_id}/rotate; credentials are hidden by default."""
         headers = {"Idempotency-Key": idempotency_key} if idempotency_key else None
-        return self._request("POST", f"/sessions/{session_id}/rotate", headers=headers)
+        path = f"/sessions/{session_id}/rotate"
+        if include_credentials:
+            path = f"{path}?include_credentials=true"
+        return self._request("POST", path, headers=headers)
 
     def terminate_session(self, session_id: str) -> dict:
         """DELETE /sessions/{session_id}."""

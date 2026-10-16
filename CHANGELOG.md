@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.5] - 2026-10-17
+
+### Added
+
+- Add session usage access through `get_session_usage()` and `Session.usage()`.
+- Document current dynamic and shared-static starting prices.
+- Document `PRODUCT_NOT_FOUND` (404) and `PRICE_MISMATCH` (409) API errors.
+- Add PyPI discovery metadata, classifiers, and project links.
+
+### Changed
+
+- Hide proxy credentials from session and rotation responses by default.
+- Add `include_credentials=True` as an explicit opt-in when connection credentials are required.
+- Align the Python SDK release line with the published `@nexalayer/mcp` package at 0.1.5.
+
 ## [0.1.1] - 2026-10-16
 
 - Add `country`, `in_stock`, `limit`, and `cursor` product filters to both SDKs.
